@@ -9,26 +9,24 @@ import os
 API_URL = 'https://www.alphavantage.co/query?'
 API_KEY = None
 
-def __st_timeseries_query(function, symbol, interval, outputsize, apikey):
+def __st_timeseries_query(**kwargs):
     """
     Low level function to generate the query and turn the result into a JSON
-    object.
+    object. Accepted arguments are:
+    
+      function
+      symbol
+      interval
+      outputsize
+      apikey
     """
 
-    q_list = [ ]
+    url_args = list()
     
-    if function:
-        q_list.append('function=%s' % function)
-    if symbol:
-        q_list.append('symbol=%s' % symbol)
-    if interval:
-        q_list.append('interval=%s' % interval)
-    if outputsize:
-        q_list.append('outputsize=%s' % outputsize)
-    if apikey:
-        q_list.append('apikey=%s' % apikey)
+    for var, arg in kwargs.items():
+        url_args.append(var + '='  + arg)
     
-    query = '&'.join(q_list)
+    query = '&'.join(arg for arg in url_args)
     query = API_URL + query
     
     # print '> [Q] %s' % query
@@ -64,19 +62,22 @@ def st_query_intraday(ticker, interval, full_data):
     }
 
     Accepted intervals are: '1min', '5min', '15min', '30min', '60min'
-
     """
-    
+
     if full_data:
         data_size = 'full'
     else:
         data_size = 'compact'
 
-    return __st_timeseries_query('TIME_SERIES_INTRADAY',
-                                 ticker,
-                                 interval,
-                                 data_size,
-                                 API_KEY)
+    intraday_args = {
+        'function'   : 'TIME_SERIES_INTRADAY',
+        'symbol'     : ticker,
+        'interval'   : interval,
+        'outputsize' : data_size,
+        'apikey'     : API_KEY
+    }
+
+    return __st_timeseries_query(**intraday_args)
 
 def st_query_daily(ticker, full_data):
     """
@@ -114,12 +115,44 @@ def st_query_daily(ticker, full_data):
     else:
         data_size = 'compact'
 
-    return __st_timeseries_query('TIME_SERIES_DAILY_ADJUSTED',
-                                 ticker,
-                                 None,
-                                 data_size,
-                                 API_KEY)
+    daily_adjusted_args = {
+        'function'   : 'TIME_SERIES_DAILY_ADJUSTED',
+        'symbol'     : ticker,
+        'outputsize' : data_size,
+        'apikey'     : API_KEY
+    }
 
+    return __st_timeseries_query(**daily_adjusted_args)
+
+def st_query_crypto_intraday(curreny, market):
+    """
+    Query a crypto currency value from a given merket.
+    """
+
+    crypto_intraday_args = {
+        'function' : 'DIGITAL_CURRENCY_INTRADAY',
+        'symbol'   : currency,
+        'market'   : market,
+        'apikey'   : API_KEY
+    }
+
+    return __st_timeseries_query(**crypto_intraday_args)
+
+def st_query_crypto_daily(currency, market):
+    """
+    Query a crypto currency value from a given merket.
+    """
+
+    crypto_daily_args = {
+        'function' : 'DIGITAL_CURRENCY_DAILY',
+        'symbol'   : currency,
+        'market'   : market,
+        'apikey'   : API_KEY
+    }
+
+    return __st_timeseries_query(**crypto_daily_args)
+
+#
 # When the module is loaded lets try and read an API key from the env.
 if not API_KEY:
     if os.environ['API_KEY']:
