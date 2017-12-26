@@ -1,11 +1,12 @@
 #!/bin/bash
+
 #
-# Run some tests.
+# Run all tests.
 #
 
 export PYTHONPATH=`pwd`
 
-for t in `ls tests`; do
+for t in `ls tests/*.py`; do
     echo "Execting test: $t"
     
     python tests/$t

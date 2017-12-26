@@ -33,3 +33,6 @@ class Asset(object):
         """
         pass
 
+    def __str__(self):
+        return self.ticker
+        

@@ -17,6 +17,10 @@ class Stock(Asset):
     DIV_AMOUNT  = '7. dividend amount'
     SPLIT_COEFF = '8. split coefficient'
 
+    # Querying the server is really expensive. So cache the raw data. This lets
+    # us look for cached data before we go to the actual server.
+    raw_data_cache = dict()
+    
     def __init__(self, ticker):
         super(Stock, self).__init__(ticker, Asset.STOCK)
         
@@ -24,15 +28,41 @@ class Stock(Asset):
         self.compact_daily = None
         self.sorted_daily_keys = None
 
-    def refresh(self):
+    def force_refresh(self):
         """
         Query price data from Alphavantage. This gets the last 100 open and
         closes of the asset, etc. The most recent data point is an up-to-date
         price for the asset, in case the markets are currently open.
+        
+        This function only updates the Stock cache for raw data. refreesh() is
+        what actually uses that data.
         """
 
-        self.raw_compact_daily = st_query_daily(self.ticker, False)
+        # Update the cache.
+        Stock.raw_data_cache[self.ticker] = st_query_daily(self.ticker, False)
 
+        self.__do_refresh()
+        
+    def refresh(self):
+        """
+        Refresh the stock - but check the cache first. If the cache has raw
+        data for thi ticker we will use it. If there's no data then go and do
+        a __refresh()
+        """
+
+        # Check the cache - if the data isn't there fill it.
+        if not self.ticker in Stock.raw_data_cache:
+            self.force_refresh()
+            
+        self.__do_refresh()
+
+    def __do_refresh(self):
+        """
+        Actually do the refresh stuff - basically just get the useful data.
+        """
+        
+        self.raw_compact_daily = Stock.raw_data_cache[self.ticker]
+            
         # The raw data isn't super conducive to data processing. So let's
         # just pull out the time series data and put that into a dictionary.
         #
@@ -40,7 +70,7 @@ class Stock(Asset):
         # for generating useful info about the asset.
         self.compact_daily = self.raw_compact_daily['Time Series (Daily)']
         self.sorted_daily_keys = sorted(self.compact_daily.keys())
-        
+
     def get_price(self):
         """
         Get latest price data. If it's not present, then call refresh() first.
@@ -66,6 +96,30 @@ class Stock(Asset):
         # work out percent change based on yesterdays adjusted close.
         c = p - float(self.compact_daily[yesterday][Stock.ADJ_CLOSE])
         c /= p
-        c *= 100
 
         return (p, c, o, v)
+
+    def __unicode__(self):
+        """
+        A srtring describing this stock.
+        """
+
+        # Do a refresh first; without this there's not a lot to display.
+        self.refresh()
+
+        (p, c, o, v) = self.get_price()
+
+        if c > 0:
+            arrow = u'\u25b2'
+        elif c < 0:
+            arrow = u'\u25bc'
+        else:
+            arrow = ' '
+            
+        return '%6s: $%-8.2f  %s%6.2f%%   | $%-8.2f  vol %d' % (self.ticker,
+                                                                p,
+                                                                arrow, c * 100,
+                                                                o,
+                                                                v)
+    def __repr__(self):
+        return self.ticker
