@@ -13,7 +13,7 @@ def __st_timeseries_query(**kwargs):
     """
     Low level function to generate the query and turn the result into a JSON
     object. Accepted arguments are:
-    
+
       function
       symbol
       interval
@@ -22,39 +22,39 @@ def __st_timeseries_query(**kwargs):
     """
 
     url_args = list()
-    
+
     for var, arg in kwargs.items():
         url_args.append(var + '='  + arg)
-    
+
     query = '&'.join(arg for arg in url_args)
     query = API_URL + query
-    
+
     # print '> [Q] %s' % query
 
     req = requests.get(query)
-    
+
     return json.loads(req.content)
 
 def st_query_intraday(ticker, interval, full_data):
     """
     Basic routine to query intraday data for a given ticker. It will return
     a JSON object with the data. The format looks like so:
-    
+
     {
         "Meta Data": {
-            "1. Information": "Intraday (1min) prices and volumes", 
-            "2. Symbol": "NVDA", 
-            "3. Last Refreshed": "2017-12-20 16:00:00", 
-            "4. Interval": "1min", 
-            "5. Output Size": "Compact", 
+            "1. Information": "Intraday (1min) prices and volumes",
+            "2. Symbol": "NVDA",
+            "3. Last Refreshed": "2017-12-20 16:00:00",
+            "4. Interval": "1min",
+            "5. Output Size": "Compact",
             "6. Time Zone": "US/Eastern"
-        }, 
+        },
         "Time Series (1min)": {
             "2017-12-20 14:21:00": {
-                "1. open": "196.4300", 
-                "2. high": "196.4500", 
-                "3. low": "196.4100", 
-                "4. close": "196.4300", 
+                "1. open": "196.4300",
+                "2. high": "196.4500",
+                "3. low": "196.4100",
+                "4. close": "196.4300",
                 "5. volume": "4134"
             },
             ...

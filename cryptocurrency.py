@@ -19,10 +19,10 @@ class CryptoCurrency(Asset):
 
     # This guy doesn't have the market field.
     __VOLUME = '5. volume'
-    
+
     def __init__(self, ticker, market):
         super(CryptoCurrency, self).__init__(ticker, Asset.CRYPTOCUR)
-        
+
         self.raw_compact_daily = None
         self.compact_daily = None
         self.sorted_daily_keys = None
@@ -33,14 +33,14 @@ class CryptoCurrency(Asset):
             setattr(self, k, v % market)
 
         self.VOLUME = CryptoCurrency.__VOLUME
-            
+
         # self.OPEN       = '1a. open (%s)' % self.market
         # self.HIGH       = '2a. high (%s)' % self.market
         # self.LOW        = '3a. low (%s)' % self.market
         # self.CLOSE      = '4a. close (%s)' % self.market
         # self.
         # self.MARKET_CAP = '6. market cap (%s)' % self.market
-        
+
     def refresh(self):
         """
         Refresh the crypto currency data.

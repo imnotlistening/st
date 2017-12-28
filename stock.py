@@ -20,10 +20,10 @@ class Stock(Asset):
     # Querying the server is really expensive. So cache the raw data. This lets
     # us look for cached data before we go to the actual server.
     raw_data_cache = dict()
-    
+
     def __init__(self, ticker):
         super(Stock, self).__init__(ticker, Asset.STOCK)
-        
+
         self.raw_compact_daily = None
         self.compact_daily = None
         self.sorted_daily_keys = None
@@ -33,7 +33,7 @@ class Stock(Asset):
         Query price data from Alphavantage. This gets the last 100 open and
         closes of the asset, etc. The most recent data point is an up-to-date
         price for the asset, in case the markets are currently open.
-        
+
         This function only updates the Stock cache for raw data. refreesh() is
         what actually uses that data.
         """
@@ -42,7 +42,7 @@ class Stock(Asset):
         Stock.raw_data_cache[self.ticker] = st_query_daily(self.ticker, False)
 
         self.__do_refresh()
-        
+
     def refresh(self):
         """
         Refresh the stock - but check the cache first. If the cache has raw
@@ -53,16 +53,16 @@ class Stock(Asset):
         # Check the cache - if the data isn't there fill it.
         if not self.ticker in Stock.raw_data_cache:
             self.force_refresh()
-            
+
         self.__do_refresh()
 
     def __do_refresh(self):
         """
         Actually do the refresh stuff - basically just get the useful data.
         """
-        
+
         self.raw_compact_daily = Stock.raw_data_cache[self.ticker]
-            
+
         # The raw data isn't super conducive to data processing. So let's
         # just pull out the time series data and put that into a dictionary.
         #
@@ -75,7 +75,7 @@ class Stock(Asset):
         """
         Get latest price data. If it's not present, then call refresh() first.
         This aims to return the latest price as the following tuple:
-        
+
           ( price, %change, open, volume )
 
         This interface aims for simplicty. It should not be made more complex
@@ -115,7 +115,7 @@ class Stock(Asset):
             arrow = u'\u25bc'
         else:
             arrow = ' '
-            
+
         return '%6s: $%-8.2f  %s%6.2f%%   | $%-8.2f  vol %d' % (self.ticker,
                                                                 p,
                                                                 arrow, c * 100,

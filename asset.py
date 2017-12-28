@@ -12,7 +12,7 @@ class Asset(object):
     # Types of asset.
     STOCK	= 'stock'
     CRYPTOCUR	= 'crypto'
-    
+
     def __init__(self, ticker, etype):
         """
         Init an asset with the passed ticker name.
@@ -20,13 +20,13 @@ class Asset(object):
 
         self.ticker = ticker
         self.etype = etype
-        
+
     def refresh(self):
         """
         Should be overridden by sub classes.
         """
         pass
-        
+
     def get_price(self):
         """
         Should be overridden by sub classes.
@@ -35,4 +35,3 @@ class Asset(object):
 
     def __str__(self):
         return self.ticker
-        
