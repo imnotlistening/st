@@ -96,6 +96,7 @@ class Portfolio:
         for asset in sorted(self.asset_counts.keys()):
             stock = Stock(asset)
             p, c, o, _ = stock.get_price()
+            pa, _ = stock.get_change()
 
             if c > 0:
                 arrow = colored(u'\u25b2', 'green')
@@ -107,8 +108,8 @@ class Portfolio:
                 arrow = ' '
                 c_colored = '%7.2f' % (c * 100)
 
-            py = p / (1 + c)
-            change = self.asset_counts[asset] * (p - py)
+
+            change = self.asset_counts[asset] * pa
 
             up += fmt % (asset,
                          p,

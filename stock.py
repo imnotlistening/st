@@ -40,6 +40,22 @@ class Stock(Asset):
 
         return (p, c, o, v)
 
+    def get_change(self):
+        """
+        Get the daily change in absolute dollars and %change. Returns the
+        following tuple:
+
+          (absChange, percentChange)
+        """
+
+        if not self.__stock_data:
+            self.refresh()
+
+        ca = float(self.__stock_data['change'])
+        cp = float(self.__stock_data['changePercent'])
+
+        return (ca, cp)
+
     def __unicode__(self):
         """
         A srtring describing this stock.

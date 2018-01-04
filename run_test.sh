@@ -4,6 +4,8 @@
 # Run a single test.
 #
 
+export PYTHONPATH=`pwd`
+
 test=$1
 shift
 
