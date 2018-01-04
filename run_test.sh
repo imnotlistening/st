@@ -4,8 +4,6 @@
 # Run a single test.
 #
 
-export PYTHONPATH=`pwd`
-
 test=$1
 shift
 
@@ -19,7 +17,7 @@ if [ "x$test" == "x" ]; then
     echo 'For example: ./run_test.sh ./tests/asset_test.py'
     exit
 fi
-    
+
 echo Running test: $test
 
 python ./$test $*

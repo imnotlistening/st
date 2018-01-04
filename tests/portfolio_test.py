@@ -26,4 +26,3 @@ for i in range(1, len(sys.argv)):
     #                                         tr.quantity)
 
     print unicode(portfolio)
-        

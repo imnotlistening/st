@@ -11,7 +11,6 @@ class Asset(object):
 
     # Types of asset.
     STOCK	= 'stock'
-    CRYPTOCUR	= 'crypto'
 
     def __init__(self, ticker, etype):
         """
