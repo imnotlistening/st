@@ -4,7 +4,9 @@
 # Run a single test.
 #
 
-export PYTHONPATH=`pwd`
+# We expect this to be run from the top level directory! If not then it's
+# not going to work - the tests won't find the modules!
+export PYTHONPATH=`pwd`/pysrc
 
 test=$1
 shift
