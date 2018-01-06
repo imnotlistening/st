@@ -80,3 +80,38 @@ class Stock(Asset):
                                                                 v)
     def __repr__(self):
         return self.ticker
+
+    def name(self):
+        return self.__stock_data['companyName']
+
+    def symb(self):
+        return self.__stock_data['symbol']
+
+    def price(self):
+        return self.__stock_data['latestPrice']
+
+    def change_percent(self):
+        return self.__stock_data['changePercent']
+
+    def change(self):
+        return self.__stock_data['change']
+
+
+#
+# These functions provide sorting key functions for sorting lists of stocks.
+#
+
+def stock_key_name(s):
+    return s.name()
+
+def stock_key_symb(s):
+    return s.symb()
+
+def stock_key_price(s):
+    return s.price()
+
+def stock_key_change_percent(s):
+    return s.change_percent()
+
+def stock_key_change(s):
+    return s.change()

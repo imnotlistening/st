@@ -63,6 +63,9 @@ class Portfolio:
 
         self.transactions = list()
         self.asset_counts = dict()
+        self.assets = list()
+        self.name = file_path
+        self.assets = None
 
         f = open(file_path)
 
@@ -93,8 +96,7 @@ class Portfolio:
         total = 0
         total_change = 0
 
-        for asset in sorted(self.asset_counts.keys()):
-            stock = Stock(asset)
+        for stock in sorted(self.assets):
             p, c, o, _ = stock.get_price()
             pa, _ = stock.get_change()
 
@@ -130,6 +132,16 @@ class Portfolio:
 
         return up
 
+    def refresh(self):
+        """
+        Refresh this portfolio.
+        """
+
+        self.accumulate_assets()
+
+        for s in self.assets:
+            s.refresh()
+
     def accumulate_assets(self):
         """
         Run through the transactions and accumate the quantities of each
@@ -152,6 +164,12 @@ class Portfolio:
                 self.cash += t.quantity
             else:
                 self.cash -= t.quantity
+
+        # Only bother doing this once.
+        if not self.assets:
+            self.assets = list()
+            for a in self.asset_counts.keys():
+                self.assets.append(Stock(a))
 
     def parse_line(self, line):
         """
