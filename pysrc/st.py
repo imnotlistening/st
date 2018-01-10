@@ -16,7 +16,7 @@ from portfolio import Portfolio
 
 # Set to true to kill the background refresh thread.
 st_refresh_thread_die = False
-st_refresh_thread_interval = 3.0 # In seconds
+st_refresh_thread_interval = 15.0 # In seconds
 
 locale.setlocale(locale.LC_ALL, '')
 
@@ -161,7 +161,7 @@ class ST:
         if self.terminate:
             return
 
-        portfolio_fields = '%-15s %-5s %9s %16s %-6s %11s %10s' % (
+        portfolio_fields = '%-15s %-5s %9s %14s | %-6s %11s %10s' % (
             'Company Name',
             'Symb',
             'Price ($)',
@@ -210,13 +210,21 @@ class ST:
             elif s.change() < 0:
                 change_color = curses.color_pair(2)
 
+            direction = ''
+            if s.change() > 0:
+                direction = u'\u25b2'
+            elif s.change() < 0:
+                direction = u'\u25bc'
+
             w.addstr(line, 0,  '%-15s' % s.name()[0:14])
             w.addstr(line, 16, '%-5s' % s.symb(), curses.A_BOLD)
             w.addstr(line, 22, '%9.2f' % s.price())
-            w.addstr(line, 32, '%8.2f %6.2f%%' % (s.change(),
-                                                  s.change_percent() * 100),
+            w.addstr(line, 32, direction.encode('utf-8'), change_color)
+            w.addstr(line, 33, '%6.2f %5.2f%%' % (abs(s.change()),
+                                                  abs(s.change_percent()) *
+                                                  100),
                      change_color)
-
+            w.addstr(line, 47, '|')
             w.addstr(line, 49, '%-6d' % p.asset_counts[s.symb()])
             w.addstr(line, 56, '%11.2f' % (p.asset_counts[s.symb()] *
                                            s.price()))
@@ -230,9 +238,9 @@ class ST:
 
         # Color red/green for assets changing.
         change_color = curses.color_pair(0)
-        if s.change() > 0:
+        if total_change > 0:
             change_color = curses.color_pair(1)
-        elif s.change() < 0:
+        elif total_change < 0:
             change_color = curses.color_pair(2)
 
         # Print accumulated stats for the portfolio.
