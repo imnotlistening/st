@@ -8,7 +8,7 @@ from stock     import Stock
 
 from termcolor import colored
 
-class Transaction:
+class Transaction(object):
     """
     Simple class to track a 'transaction' - either equities or cash. Exists
     mostly to just glue some data together.
@@ -36,7 +36,7 @@ class Transaction:
 
         self.description = desc
 
-class Portfolio:
+class Portfolio(object):
     """
     This wraps a list of transactions. Transactions can be for equities or for
     cash.

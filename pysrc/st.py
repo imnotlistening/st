@@ -68,7 +68,7 @@ def st_refresh_thread(args):
 
         tracker.lock.release()
 
-class ST:
+class ST(object):
     """
     ST: stock tracker! This encapsulates our little stock tracking app!
     """
