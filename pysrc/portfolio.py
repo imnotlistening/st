@@ -5,41 +5,14 @@
 
 from datetime  import datetime
 from stock     import Stock
+from lot       import Lot
 
 from termcolor import colored
-
-class Transaction(object):
-    """
-    Simple class to track a 'transaction' - either equities or cash. Exists
-    mostly to just glue some data together.
-    """
-
-    # The different types of supported transactions for our portfolio
-    BUY       = 'BUY'
-    SELL      = 'SELL'
-    DEPOSIT   = 'DEPOSIT'
-    WITHDRAWL = 'WITHDRAWL'
-
-    def __init__(self, tr_date, tr_type,
-                 quantity=0, ticker=None, price=0, desc=None):
-        """
-        A list of these defines a portfolio.
-        """
-        self.tr_date = tr_date
-        self.tr_type = tr_type
-        self.quantity = quantity
-
-        # Only keep track of this if we are trading an equity of some sort.
-        if tr_type == Transaction.BUY or tr_type == Transaction.SELL:
-            self.stock = Stock(ticker)
-            self.price = price
-
-        self.description = desc
+from operator  import methodcaller
 
 class Portfolio(object):
     """
-    This wraps a list of transactions. Transactions can be for equities or for
-    cash.
+    This wraps a list of lots. Each lot represents some stocks.
     """
 
     def __init__(self, file_path):
@@ -61,16 +34,18 @@ class Portfolio(object):
               [# msg] An optional message describing the transaction.
         """
 
-        self.transactions = list()
+        self.name         = file_path
+        self.lots         = list()
+        self.assets       = None     # Will be a list of stocks.
         self.asset_counts = dict()
-        self.assets = list()
-        self.name = file_path
-        self.assets = None
+        self.cash         = 0.0
 
         f = open(file_path)
 
         for line in f:
             self.parse_line(line)
+
+        self.accumulate_assets()
 
     def __unicode__(self):
         """
@@ -91,14 +66,13 @@ class Portfolio(object):
                                                            '-------------',
                                                            '------')
 
-        self.accumulate_assets()
-
         total = 0
         total_change = 0
 
         for stock in sorted(self.assets):
             p, c, o, _ = stock.get_price()
             pa, _ = stock.get_change()
+            asset = stock.ticker
 
             if c > 0:
                 arrow = colored(u'\u25b2', 'green')
@@ -125,10 +99,12 @@ class Portfolio(object):
 
         # Totals
         up += '\n'
-        up += 'Total Change    $%12.2f\n' % total_change
-        up += 'Total Equity    $%12.2f\n' % total
+        up += 'Daily change    $%12.2f\n' % total_change
+        up += 'Total equity    $%12.2f\n' % total
         up += 'Cash:           $%12.2f\n' % self.cash
-        up += 'Portfolio value $%12.2f'   % (total + self.cash)
+        up += 'Portfolio value $%12.2f\n' % (total + self.cash)
+        up += 'Cost basis:     $%12.2f\n' % self.cost_basis()
+        up += 'Total gain      $%12.2f'   % ((total + self.cash) - self.cost_basis())
 
         return up
 
@@ -137,39 +113,41 @@ class Portfolio(object):
         Refresh this portfolio.
         """
 
-        self.accumulate_assets()
-
         for s in self.assets:
             s.refresh()
 
     def accumulate_assets(self):
         """
-        Run through the transactions and accumate the quantities of each
-        asset.
+        Run through the lots and count up how much of each stock we actually
+        have. Store this in the dict assets.
         """
 
-        self.cash = 0
         self.asset_counts = dict()
 
-        for t in self.transactions:
-            if t.tr_type == Transaction.BUY:
-                if not repr(t.stock) in self.asset_counts:
-                    self.asset_counts[repr(t.stock)] = 0
-                self.asset_counts[repr(t.stock)] += t.quantity
-            elif t.tr_type == Transaction.SELL:
-                if not repr(t.stock) in self.asset_counts:
-                    self.asset_counts[repr(t.stock)] = 0
-                self.asset_counts[repr(t.stock)] -= t.quantity
-            elif t.tr_type == Transaction.DEPOSIT:
-                self.cash += t.quantity
-            else:
-                self.cash -= t.quantity
+        for l in self.lots:
+            if l.stock.ticker not in self.asset_counts.keys():
+                self.asset_counts[l.stock.ticker] = 0
+
+            self.asset_counts[l.stock.ticker] += l.nr
 
         # Only bother doing this once.
         if not self.assets:
             self.assets = list()
             for a in self.asset_counts.keys():
                 self.assets.append(Stock(a))
+
+    def cost_basis(self):
+        """
+        Accumulate the cost basis for this portfolio. This uses a numerically
+        tax efficient strategy for handling sells which affect cost basis.
+        """
+
+        cb = 0.0
+
+        for l in self.lots:
+            cb += l.cost_basis()
+
+        return cb
 
     def parse_line(self, line):
         """
@@ -195,41 +173,64 @@ class Portfolio(object):
         # And now split the tr_data into items and parse them.
         tr_items = tr_data.split()
 
-        t = None
+        l = None
 
         # This is a deposit/withdrawl.
         if len(tr_items) == 2:
             if tr_items[0] == 'DEPOSIT':
-                t = Transaction(date, Transaction.DEPOSIT, float(tr_items[1]),
-                                desc=comment)
+                self.cash += float(tr_items[1])
             elif tr_items[0] == 'WITHDRAWL':
-                t = Transaction(date, Transaction.WITHDRAWL, float(tr_items[1]),
-                                desc=comment)
+                self.cash -= float(tr_items[1])
             else:
                 print 'Unrecognized transaction type: %s' % tr_items[0]
 
         # Looks like we might have a stock trade.
         elif len(tr_items) == 4:
             if tr_items[0] == 'BUY':
-                t = Transaction(date, Transaction.BUY,
-                                quantity=float(tr_items[1]),
-                                ticker=tr_items[2],
-                                price=float(tr_items[3]),
-                                desc=comment)
+
+                # If we have a buy then we just need to add a new lot to our
+                # list of lots. Sells will go and modify the lots.
+                l = Lot(Stock(tr_items[2]),
+                        date,
+                        float(tr_items[3]),
+                        float(tr_items[1]),
+                        cmt=comment)
             elif tr_items[0] == 'SELL':
-                t = Transaction(date, Transaction.SELL,
-                                quantity=float(tr_items[1]),
-                                ticker=tr_items[2],
-                                price=float(tr_items[3]),
-                                desc=comment)
+                self.__handle_sell(tr_items)
             else:
                 print 'Unrecognized transaction type: %s' % tr_items[0]
         else:
             print 'Bad data line: "%s"' % line
 
-        if not t:
-            return
+        # If we have a lot then add it to our list!
+        if l:
+            self.lots.append(l)
 
-        # Ok, we have our transaction, let's add it to our list.
-        self.transactions.append(t)
-        self.transactions.sort(key=lambda d: t.tr_date)
+    def __handle_sell(self, tr_items):
+        """
+        Handle a sell. This requires thinking about which stocks to actually
+        sell. For our purposes we will use a tax avoidance method. The idea is
+        to sell stocks that minimize tax burden now. Another way of thinking
+        about this is to minimize capital gains for the sell.
+
+        This isn't the only method for choosing which stocks to sell, but it
+        should give a reasonable guess of what the average investor might do.
+        """
+
+        s = Stock(tr_items[2])
+        nr = float(tr_items[1])
+        matching_lots = list()
+
+        # Find lots that have the stock we are selling.
+        for l in self.lots:
+            if l.stock == s:
+                matching_lots.append(l)
+
+        # Now sort the lots by gain low to high.
+        matching_lots.sort(key=methodcaller('compute_gain'))
+
+        for l in matching_lots:
+            nr = l.remove(nr)
+
+            if nr == 0:
+                break

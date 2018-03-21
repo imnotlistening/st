@@ -7,17 +7,36 @@ class Stock(Asset):
     A stock class derived from an asset.
     """
 
+    # Cache of data that's global to all stocks. Prevents needless look up of
+    # data and constant refreshing.
+    __data_cache = dict()
+
     def __init__(self, ticker):
         super(Stock, self).__init__(ticker, Asset.STOCK)
-
-        self.__stock_data = None
 
     def refresh(self):
         """
         Refresh the stock data.
         """
 
-        self.__stock_data = st_query_quote(self.ticker)
+        stock_data = st_query_quote(self.ticker)
+
+        Stock.__data_cache[self.ticker] = stock_data
+
+    def __get_data(self):
+        return Stock.__data_cache.get(self.ticker)
+
+    def get_data(self):
+        """
+        Get the latest data refreshing the stock if it's not present.
+        """
+
+        data = self.__get_data()
+        if not data:
+            self.refresh()
+            data = self.__get_data()
+
+        return data
 
     def get_price(self):
         """
@@ -30,13 +49,12 @@ class Stock(Asset):
         than this. Other interfaces can do that.
         """
 
-        if not self.__stock_data:
-            self.refresh()
+        data = self.get_data()
 
-        p = float(self.__stock_data['latestPrice'])
-        c = float(self.__stock_data['changePercent'])
-        o = float(self.__stock_data['open'])
-        v = float(self.__stock_data['avgTotalVolume'])
+        p = float(data['latestPrice'])
+        c = float(data['changePercent'])
+        o = float(data['open'])
+        v = float(data['avgTotalVolume'])
 
         return (p, c, o, v)
 
@@ -48,11 +66,10 @@ class Stock(Asset):
           (absChange, percentChange)
         """
 
-        if not self.__stock_data:
-            self.refresh()
+        data = self.get_data()
 
-        ca = float(self.__stock_data['change'])
-        cp = float(self.__stock_data['changePercent'])
+        ca = float(data['change'])
+        cp = float(data['changePercent'])
 
         return (ca, cp)
 
@@ -78,23 +95,37 @@ class Stock(Asset):
                                                                 arrow, c * 100,
                                                                 o,
                                                                 v)
+    def __eq__(self, s):
+        if not isinstance(s, Stock):
+            return NotImplemented
+
+        return s.ticker == self.ticker
+
+    def __ne__(self, s):
+        eq = self.__eq__(s)
+
+        if eq == NotImplemented:
+            return NotImplemented
+
+        return not eq
+
     def __repr__(self):
         return self.ticker
 
     def name(self):
-        return self.__stock_data['companyName']
+        return self.get_data()['companyName']
 
     def symb(self):
-        return self.__stock_data['symbol']
+        return self.get_data()['symbol']
 
     def price(self):
-        return self.__stock_data['latestPrice']
+        return self.get_data()['latestPrice']
 
     def change_percent(self):
-        return self.__stock_data['changePercent']
+        return self.get_data()['changePercent']
 
     def change(self):
-        return self.__stock_data['change']
+        return self.get_data()['change']
 
 
 #

@@ -236,6 +236,14 @@ class ST(object):
 
         line += 1
 
+        # Get overall change (of assets) for the portfolio.
+        overall_change = total_assets - p.cost_basis()
+        overall_color = curses.color_pair(0)
+        if overall_change > 0:
+            overall_color = curses.color_pair(1)
+        elif overall_change < 0:
+            overall_color = curses.color_pair(2)
+
         # Color red/green for assets changing.
         change_color = curses.color_pair(0)
         if total_change > 0:
@@ -244,12 +252,18 @@ class ST(object):
             change_color = curses.color_pair(2)
 
         # Print accumulated stats for the portfolio.
-        w.addstr(line,     0,  'Asset value:')
-        w.addstr(line,     15, '$ %.2f' % total_assets,
+        w.addstr(line,     0,  'Daily:')
+        w.addstr(line,     8, '$%.2f' % total_change,
                  curses.A_BOLD | change_color)
-        w.addstr(line + 1, 0,  'Daily change:')
-        w.addstr(line + 1, 15, '$ %.2f' % total_change,
-                 curses.A_BOLD | change_color)
+        w.addstr(line,     23, 'Total:')
+        w.addstr(line,     30, '$%.2f' % overall_change,
+                 curses.A_BOLD | overall_color)
+        w.addstr(line + 1, 0,  'Assets:')
+        w.addstr(line + 1, 8, '$%.2f' % total_assets)
+        w.addstr(line + 1, 23, 'Cash:  $%.2f' % p.cash)
+        w.addstr(line + 1, 44, 'Total value:')
+        w.addstr(line + 1, 58, '$%.2f' % (p.cash + total_assets),
+                 curses.A_BOLD)
 
     def display_portfolio(self, p):
         """
