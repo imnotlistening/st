@@ -75,7 +75,7 @@ class Stock(Asset):
 
     def __unicode__(self):
         """
-        A srtring describing this stock.
+        A string describing this stock.
         """
 
         # Do a refresh first; without this there's not a lot to display.
