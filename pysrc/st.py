@@ -9,6 +9,7 @@ import curses
 
 from curses.textpad import Textbox
 
+from stcommand import STCommand
 from stcommand import st_get_command
 from stcommand import st_get_commands
 
@@ -19,6 +20,16 @@ class ST(object):
     The main ST app. This handles the little command line and kicking off
     commands to the command objects.
     """
+
+    class STCommandUnknown(STCommand):
+        def __init__(self):
+                    super(ST.STCommandUnknown, self).__init__('unknown',
+                                                              'Unknown command',
+                                                              None, 0)
+        def update(self, cmdlist):
+            self.println('Unknown command:')
+            self.println('')
+            self.println('  \'%s\'' % ' '.join(cmdlist))
 
     def __init__(self, stdscr):
         """
@@ -49,6 +60,9 @@ class ST(object):
         # Init the display.
         self.clear_main()
         self.stdscr.addstr(curses.LINES - 1, 0, '>')
+
+        # Error handling 'command'
+        self.error_handler = ST.STCommandUnknown()
 
         self.__load_builtins()
         self.__refresh()
@@ -123,6 +137,13 @@ class ST(object):
 
         return False
 
+    def handle_unknown(self, cmdlist):
+        """
+        Handle an unknown command.
+        """
+
+        self.draw_main(self.error_handler.do_update(cmdlist))
+
     def run(self):
         """
         Run the ST app.
@@ -153,15 +174,15 @@ class ST(object):
         cmd = st_get_command(cmdlist[0])
 
         if not cmd:
-            # Handle the non-recognized command
-            # TODO!!
-            exit
+            self.log('Unknown command \'%s\'' % cmdlist[0])
+            self.handle_unknown(cmdlist)
+            return
 
         # Handle a known command. First call .update_init() and then the
-        # first .update().
+        # first .do_update().
         cmd.update_init(cmdlist)
 
-        self.draw_main(cmd.update(cmdlist))
+        self.draw_main(cmd.do_update(cmdlist))
 
         sleep_duration = cmd.refresh
 
@@ -171,7 +192,7 @@ class ST(object):
             self.log('Done command \'%s\'' % cmdlist[0])
             return
 
-        # Periodically rerun the .update() method on the command.
+        # Periodically rerun the .do_update() method on the command.
         while True:
 
             current_sleep = 0
@@ -187,7 +208,7 @@ class ST(object):
                     return
 
             if cmd.refresh > 0:
-                self.draw_main(cmd.update(cmdlist))
+                self.draw_main(cmd.do_update(cmdlist))
 
 def main(stdscr):
     """

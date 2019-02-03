@@ -41,25 +41,21 @@ class STCommandHelp(STCommand):
         Run through the list of known commands and display their help messages.
         """
 
-        lines = [ ]
-
-        lines.append('ST command help. ST is a stock tracker app for the')
-        lines.append('command line. Customizable and extensible!')
-        lines.append('')
-        lines.append('ST Commands')
-        lines.append('-----------')
-        lines.append('')
+        self.println('ST command help. ST is a stock tracker app for the')
+        self.println('command line. Customizable and extensible!')
+        self.println('')
+        self.println('ST Commands')
+        self.println('-----------')
+        self.println('')
 
         for c in st_get_commands():
-            lines.append('  %s' % c)
+            self.println('  %s' % c)
 
-        lines.append('')
-        lines.append('Aliases          Command')
-        lines.append('-------          -------')
+        self.println('')
+        self.println('Aliases          Command')
+        self.println('-------          -------')
         for a, c in st_get_aliases():
-            lines.append('  %-14s %s' % (a, c))
-
-        return lines
+            self.println('  %-14s %s' % (a, c))
 
 class STCommandLoad(STCommand):
     """
@@ -77,13 +73,9 @@ class STCommandLoad(STCommand):
 
         lines = [ ]
 
-        lines.append('Loading commands:')
-
         for c in cmd[1:]:
             # Handle load...
-            lines.append('  > %-30s: <UNKNOWN>' % c)
-
-        return lines
+            self.println('  > %-30s: <UNKNOWN>' % c)
 
 class STCommandAlias(STCommand):
     """
@@ -104,19 +96,16 @@ class STCommandAlias(STCommand):
         Create an alias.
         """
 
-        lines = [ ]
-
         if len(cmd) < 3:
-            lines.append('Invalid alias command: \'%s\'' % ' '.join(cmd))
-            return lines
+            self.println('Invalid alias command: \'%s\'' % ' '.join(cmd))
+            return
 
         alias  = cmd[1]
         cmdstr = cmd[2]
 
         st_add_alias(alias, cmdstr)
 
-        lines.append('New alias: \'%s\' -> \'%s\'' % (alias, cmdstr))
-        return lines
+        self.println('New alias: \'%s\' -> \'%s\'' % (alias, cmdstr))
 
 st_add_command(STCommandHelp())
 st_add_command(STCommandLoad())

@@ -40,6 +40,16 @@ class STCommand(object):
         """
         return None
 
+    def do_update(self, cmd):
+        """
+        Wraps the update() call so that necessary printing, etc, is handled for
+        you. Don't override.
+        """
+
+        self.__clear_lines()
+        self.update(cmd)
+        return self.__get_lines()
+
     def update_init(self, cmd):
         """
         May be overriden by a subclass if some special behavior prior to the
@@ -53,15 +63,18 @@ class STCommand(object):
     def get_help(self):
         return '%s\n\n%s' % (self, self.help_details)
 
-    def __execute(self, window, cmd):
+    def __clear_lines(self):
+        self.__lines = [ ]
+
+    def __get_lines(self):
+        return self.__lines
+
+    def println(self, line):
         """
-        Subclasses should not override this. This executes the command and
-        handles the necessary multithreading, etc, to make the window work as
-        expected.
+        Print a line; expected to be called during update().
         """
 
-        # Hmm. How to do this?
-        pass
+        self.__lines.append(line)
 
 def st_add_command(stcmd):
     """
