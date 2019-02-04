@@ -12,6 +12,10 @@ __st_commands = { }
 __st_aliases  = { }
 
 class STCommand(object):
+
+    SUCCESS = True
+    FAILURE = False
+
     def __init__(self, name, help_msg, help_details=None, refresh=15):
         """
         Initialize a command object that can execute commands.
@@ -35,30 +39,34 @@ class STCommand(object):
 
         Takes a list containing the command and any arguments to the command.
 
-        Return a list of strings that should be copied to the terminal line by
-        line. This will be called indefinitely during the
+        use self.println() to print to the main screen.
         """
         return None
-
-    def do_update(self, cmd):
-        """
-        Wraps the update() call so that necessary printing, etc, is handled for
-        you. Don't override.
-        """
-
-        self.__clear_lines()
-        self.update(cmd)
-        return self.__get_lines()
 
     def update_init(self, cmd):
         """
         May be overriden by a subclass if some special behavior prior to the
-        first update is desired.
+        first update is desired. Usually this is just arg parsing or some such.
+
+        This function should return True of it's ok to proceed with .update() or
+        False if it is not. For example if arg parsing fails then return False.
         """
-        pass
+        return True
+
+    def st_update(self, cmd):
+        self.__clear_lines()
+        status = self.update(cmd)
+        lines  = self.__get_lines()
+        return status, lines
+
+    def st_update_init(self, cmd):
+        self.__clear_lines()
+        status = self.update_init(cmd)
+        lines  = self.__get_lines()
+        return status, lines
 
     def __str__(self):
-        return '%-10s %s' % (self.name, self.help_msg)
+        return '%-14s %s' % (self.name, self.help_msg)
 
     def get_help(self):
         return '%s\n\n%s' % (self, self.help_details)

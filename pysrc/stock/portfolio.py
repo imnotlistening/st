@@ -4,11 +4,11 @@
 #
 
 from datetime  import datetime
-from stock     import Stock
-from lot       import Lot
-
 from termcolor import colored
 from operator  import methodcaller
+
+from stock     import Stock
+from lot       import Lot
 
 class Portfolio(object):
     """

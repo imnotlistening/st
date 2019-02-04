@@ -31,6 +31,8 @@ class ST(object):
             self.println('')
             self.println('  \'%s\'' % ' '.join(cmdlist))
 
+            return STCommand.SUCCESS
+
     def __init__(self, stdscr):
         """
         There are two primary windows in ST: the main window, which is managed
@@ -77,6 +79,7 @@ class ST(object):
         """
 
         import builtin_cmds
+        import cmd_portfolio
 
         self.log('Loaded builtin commands:')
         for c in st_get_commands():
@@ -122,7 +125,7 @@ class ST(object):
 
         self.MAIN.refresh()
 
-    def handle_user_input():
+    def handle_user_input(self):
         """
         Handle user input: mostly we care about 'q': this means quit the current
         command. There could be other uses in the future too, though.
@@ -142,7 +145,8 @@ class ST(object):
         Handle an unknown command.
         """
 
-        self.draw_main(self.error_handler.do_update(cmdlist))
+        status, lines = self.error_handler.st_update(cmdlist)
+        self.draw_main(lines)
 
     def run(self):
         """
@@ -168,6 +172,9 @@ class ST(object):
         Attempt to execute the passed command.
         """
 
+        if not cmd:
+            return
+
         cmdlist = cmd.split()
         self.log('Executing command: \'%s\'' % cmd)
 
@@ -178,11 +185,17 @@ class ST(object):
             self.handle_unknown(cmdlist)
             return
 
-        # Handle a known command. First call .update_init() and then the
+        # Handle a known command. First call .do_update_init() and then the
         # first .do_update().
-        cmd.update_init(cmdlist)
+        success, lines = cmd.st_update_init(cmdlist)
+        self.draw_main(lines)
+        if not success:
+            return
 
-        self.draw_main(cmd.do_update(cmdlist))
+        success, lines = cmd.st_update(cmdlist)
+        self.draw_main(lines)
+        if not success:
+            return
 
         sleep_duration = cmd.refresh
 
@@ -208,7 +221,10 @@ class ST(object):
                     return
 
             if cmd.refresh > 0:
-                self.draw_main(cmd.do_update(cmdlist))
+                success, lines = cmd.st_update(cmdlist)
+                self.draw_main(lines)
+                if not success:
+                    return
 
 def main(stdscr):
     """

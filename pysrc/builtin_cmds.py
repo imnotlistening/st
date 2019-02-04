@@ -57,6 +57,8 @@ class STCommandHelp(STCommand):
         for a, c in st_get_aliases():
             self.println('  %-14s %s' % (a, c))
 
+        return STCommand.SUCCESS
+
 class STCommandLoad(STCommand):
     """
     Allow the user to load custom pyhton commands!
@@ -76,6 +78,8 @@ class STCommandLoad(STCommand):
         for c in cmd[1:]:
             # Handle load...
             self.println('  > %-30s: <UNKNOWN>' % c)
+
+        return STCommand.SUCCESS
 
 class STCommandAlias(STCommand):
     """
@@ -98,7 +102,7 @@ class STCommandAlias(STCommand):
 
         if len(cmd) < 3:
             self.println('Invalid alias command: \'%s\'' % ' '.join(cmd))
-            return
+            return STCommand.FAILURE
 
         alias  = cmd[1]
         cmdstr = cmd[2]
@@ -107,7 +111,12 @@ class STCommandAlias(STCommand):
 
         self.println('New alias: \'%s\' -> \'%s\'' % (alias, cmdstr))
 
+        return STCommand.SUCCESS
+
 st_add_command(STCommandHelp())
 st_add_command(STCommandLoad())
 st_add_command(STCommandQuit())
 st_add_command(STCommandAlias())
+
+st_add_alias('h', 'help')
+st_add_alias('q', 'quit')
