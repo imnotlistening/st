@@ -8,8 +8,15 @@ import argparse
 from StringIO import StringIO
 
 from stcommand import STCommand
+from stcommand import STLine
 from stcommand import st_add_command
 from stcommand import st_add_alias
+
+from stock.portfolio import Portfolio
+
+
+portfolio_header = '%-15s %-5s %9s %10s | %-6s %11s %10s'
+portfolio_fields = '%-15s %-5s %9.2f %10s | %-6d %11.2f %10.2f'
 
 # Let's us handle errors instead of argparse printing a useless help message
 # and killing our app.
@@ -46,6 +53,12 @@ class STCommandPortfolio(STCommand):
         parser.add_argument('--refresh', '-r', type=int,
                             action='store', default=15,
                             help='Refresh interval for querying stock prices')
+        parser.add_argument('--details', '-d',
+                            action='store_true',
+                            help='Print more details about each stock.')
+        parser.add_argument('--reverse-sort', '-R',
+                            action='store_true',
+                            help='Reverse the sort done on the stocks.')
         parser.add_argument('portfolio', nargs=1,
                             help='Path to portfolio to display')
 
@@ -99,7 +112,20 @@ class STCommandPortfolio(STCommand):
         self.args = args
         self.println('Loading portfolio: \'%s\'' % args.portfolio[0])
 
-        return STCommand.FAILURE
+        try:
+            p = Portfolio(args.portfolio[0])
+        except Exception as e:
+            self.println('> %s' % e)
+            return STCommand.FAILURE
+
+        for l in unicode(p).split('\n'):
+            self.println(l)
+
+        self.portfolio = p
+        self.runs = 0
+        self.refresh = args.refresh
+
+        return STCommand.SUCCESS
 
     def update(self, cmdlist):
         """
@@ -107,9 +133,89 @@ class STCommandPortfolio(STCommand):
         was successful.
         """
 
-        portfolio_path = self.args.portfolio[0]
+        # Well, we need one of these, for sure.
+        if not self.portfolio:
+            return STCommand.FAILURE
+
+        self.println('Portfolio: %s' % self.args.portfolio[0]);
+
+        lot_list = self.portfolio.lots
+        lot_dict = { }
+
+        if self.runs > 0:
+            self.portfolio.refresh()
+        self.runs += 1
+
+        # Build a dictionary of the lots - map stock to list of relevant lots.
+        for l in lot_list:
+            if l.stock.symb() not in lot_dict:
+                lot_dict[l.stock.symb()] = list()
+            lot_dict[l.stock.symb()].append(l)
+
+        # Now start printing stuff.
+        self.println(portfolio_header % (
+            'Company Name',
+            'Symb',
+            'Price ($)',
+            'Change',
+            'Shares',
+            'Value',
+            'Gain'))
+
+        self.println(portfolio_header % (
+            '------------',
+            '----',
+            '---------',
+            '------',
+            '------',
+            '-----',
+            '----'))
+
+        for symb in sorted(lot_dict.keys()):
+            shares = 0
+            for l in lot_dict[symb]:
+                shares += l.nr
+
+            l = lot_dict[symb][0] # Access to a lot for general info.
+            c = None
+            if l.stock.change() > 0:
+                c = STLine.GREEN
+            elif l.stock.change() < 0:
+                c = STLine.RED
+
+            direction = ''
+            if l.stock.change() > 0:
+                direction = u'\u25b2'
+            elif l.stock.change() < 0:
+                direction = u'\u25bc'
+
+            self.println(portfolio_fields % (
+                l.stock.name()[0:14],
+                l.stock.symb(),
+                l.stock.price(),
+                '%-1s %.02f' % (direction, l.stock.change()),
+                shares,
+                shares * l.stock.price(),
+                shares * l.stock.change()), color=c)
+
+            if not self.args.details:
+                continue
+
+            for l in lot_dict[symb]:
+                change = l.stock.price() - l.acquire_price
+                change_pc = (change / l.acquire_price) * 100
+
+                self.println('  %s: %5d @ %7.02f  $%9.02f [%7.02f%%]' % (
+                    l.date.strftime('%b %d, %Y'),
+                    l.nr, l.acquire_price,
+                    change, change_pc))
+
+            self.println('')
+
+        self.println('** Runs: %d' % self.runs);
 
         return STCommand.SUCCESS
 
 st_add_command(STCommandPortfolio())
 st_add_alias('port', 'portfolio')
+st_add_alias('p', 'portfolio')

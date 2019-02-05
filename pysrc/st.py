@@ -6,6 +6,7 @@ import sys
 import time
 import locale
 import curses
+import argparse
 
 from curses.textpad import Textbox
 
@@ -33,7 +34,7 @@ class ST(object):
 
             return STCommand.SUCCESS
 
-    def __init__(self, stdscr):
+    def __init__(self, stdscr, args):
         """
         There are two primary windows in ST: the main window, which is managed
         by commands, and the command window, which is managed by us. We can
@@ -43,12 +44,14 @@ class ST(object):
 
         self.log_file = open('log.txt', 'w')
 
+        self.args = args
+
         # Has it's uses.
         self.stdscr = stdscr
 
         # Colors for up vs down stocks. Hmm, may not need this.
-        # curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_BLACK)
-        # curses.init_pair(2, curses.COLOR_RED,   curses.COLOR_BLACK)
+        curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_BLACK)
+        curses.init_pair(2, curses.COLOR_RED,   curses.COLOR_BLACK)
 
         # Windows - CMD starts 3 chars in so we can draw a simple prompt.
         # Ugh. The textbox should really support this some how!
@@ -103,7 +106,7 @@ class ST(object):
         self.MAIN.border(' ', ' ', ' ',              curses.ACS_HLINE,
                          ' ', ' ', curses.ACS_HLINE, curses.ACS_HLINE)
 
-    def draw_main(self, str_list):
+    def draw_main(self, line_list):
         """
         Redraw the main window.
         """
@@ -114,13 +117,19 @@ class ST(object):
         cur_y = 0
 
 
-        for s in str_list:
+        for l in line_list:
 
             # Don't write too much!
-            if cur_y >= y:
+            if (cur_y - 1) >= y:
                 break;
 
-            self.MAIN.addnstr(cur_y, 0, s, x)
+            color = curses.color_pair(0)
+            if l.color == 'g':
+                color = curses.color_pair(1)
+            elif color == 'r':
+                color = curses.color_pair(2)
+
+            self.MAIN.addnstr(cur_y, 0, l.line.encode('utf-8'), x, color)
             cur_y += 1
 
         self.MAIN.refresh()
@@ -152,6 +161,10 @@ class ST(object):
         """
         Run the ST app.
         """
+
+        # If there's a portfolio argument, then load it up as a first command.
+        if self.args.portfolio:
+            self.exec_cmd('portfolio %s' % ' '.join(self.args.portfolio))
 
         # User will terminate.
         while True:
@@ -226,12 +239,25 @@ class ST(object):
                 if not success:
                     return
 
+def parse_args():
+    parser = argparse.ArgumentParser(description='Stock Tracking CLI App')
+
+    # Currently we don't take many arguments!
+    parser.add_argument('portfolio', nargs='*',
+                        help='Path to portfolio to display and args')
+
+    return parser.parse_args()
+
 def main(stdscr):
     """
     This expects to have been called via the curses wrapper.
     """
 
-    st = ST(stdscr)
+    global args
+
+    st = ST(stdscr, args)
     st.run()
+
+args = parse_args()
 
 curses.wrapper(main)

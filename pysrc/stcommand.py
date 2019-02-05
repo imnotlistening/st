@@ -11,6 +11,22 @@ import curses
 __st_commands = { }
 __st_aliases  = { }
 
+class STLine(object):
+    """
+    Simple class to hold some data about a printed line. Allows the caller to
+    add some color to the line.
+    """
+
+    RED   = 'r'
+    GREEN = 'g'
+
+    def __init__(self, line, color):
+        self.line = line
+        self.color = color
+
+        if color not in [self.RED, self.GREEN]:
+            color = None
+
 class STCommand(object):
 
     SUCCESS = True
@@ -77,12 +93,12 @@ class STCommand(object):
     def __get_lines(self):
         return self.__lines
 
-    def println(self, line):
+    def println(self, line, color=None):
         """
         Print a line; expected to be called during update().
         """
 
-        self.__lines.append(line)
+        self.__lines.append(STLine(line, color))
 
 def st_add_command(stcmd):
     """

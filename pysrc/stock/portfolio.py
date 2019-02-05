@@ -7,8 +7,13 @@ from datetime  import datetime
 from termcolor import colored
 from operator  import methodcaller
 
+import curses
+
 from stock     import Stock
 from lot       import Lot
+
+def no_color(s, color):
+    return s
 
 class Portfolio(object):
     """
@@ -47,9 +52,9 @@ class Portfolio(object):
 
         self.accumulate_assets()
 
-    def __unicode__(self):
+    def __to_string(self, color_func=no_color):
         """
-        Return a string representation of this portfolio.
+        Return a unicode string representation of this portfolio.
         """
 
         fmt = '%-7s %12.2f   %s %-7s   %-8d | $%12.2f  %12.2f\n'
@@ -75,14 +80,14 @@ class Portfolio(object):
             asset = stock.ticker
 
             if c > 0:
-                arrow = colored(u'\u25b2', 'green')
-                c_colored = colored('%7.2f' % (c * 100), 'green')
+                arrow = color_func(u'\u25b2', 'green')
+                c_colored = color_func('%7.2f' % (c * 100), 'green')
             elif c < 0:
-                arrow = colored(u'\u25bc', 'red')
-                c_colored = colored('%7.2f' % (c * 100), 'red')
+                arrow = color_func(u'\u25bc', 'red')
+                c_color = color_func('%7.2f' % (c * 100), 'red')
             else:
                 arrow = ' '
-                c_colored = '%7.2f' % (c * 100)
+                c_color = '%7.2f' % (c * 100)
 
 
             change = self.asset_counts[asset] * pa
@@ -107,6 +112,15 @@ class Portfolio(object):
         up += 'Total gain      $%12.2f'   % ((total + self.cash) - self.cost_basis())
 
         return up
+
+    def __unicode__(self):
+        return self.__to_string()
+
+    def __str__(self):
+        return self.to_string()
+
+    def to_string_color(self):
+        return self.to_string(color_func=colored)
 
     def refresh(self):
         """

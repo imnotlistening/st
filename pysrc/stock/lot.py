@@ -60,3 +60,10 @@ class Lot(object):
         price  = self.stock.price()
 
         return (price - self.acquire_price) * self.nr
+
+    def __lt__(self, l):
+        if not isinstance(l, Lot):
+            return NotImplemented
+
+        # Alphabetical sort.
+        return self.stock < l.stock

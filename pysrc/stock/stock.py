@@ -109,6 +109,13 @@ class Stock(Asset):
 
         return not eq
 
+    def __lt__(self, s):
+        if not isinstance(s, Stock):
+            return NotImplemented
+
+        # Alphabetical sort.
+        return self.get_data()['symbol'] < s.get_data()['symbol']
+
     def __repr__(self):
         return self.ticker
 
