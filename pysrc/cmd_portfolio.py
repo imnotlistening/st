@@ -131,6 +131,9 @@ class STCommandPortfolio(STCommand):
         """
         Assumes the update_init() was successfull which means the arg parsing
         was successful.
+
+        TODO: Make this clear and cohesive. OMG, this is bad. A lot of this
+        needs to be hidden in the portfolio class itself.
         """
 
         # Well, we need one of these, for sure.
@@ -171,6 +174,11 @@ class STCommandPortfolio(STCommand):
             '-----',
             '----'))
 
+        total_equity    = 0.0
+        total_cash      = 0.0
+        portfolio_value = 0.0
+        daily_change    = 0.0
+
         for symb in sorted(lot_dict.keys()):
             shares = 0
             for l in lot_dict[symb]:
@@ -178,25 +186,25 @@ class STCommandPortfolio(STCommand):
 
             l = lot_dict[symb][0] # Access to a lot for general info.
             c = None
-            if l.stock.change() > 0:
-                c = STLine.GREEN
-            elif l.stock.change() < 0:
-                c = STLine.RED
-
             direction = ''
             if l.stock.change() > 0:
                 direction = u'\u25b2'
+                c = STLine.GREEN
             elif l.stock.change() < 0:
                 direction = u'\u25bc'
+                c = STLine.RED
 
             self.println(portfolio_fields % (
                 l.stock.name()[0:14],
                 l.stock.symb(),
                 l.stock.price(),
-                '%-1s %.02f' % (direction, l.stock.change()),
+                '%-1s %6.02f' % (direction, l.stock.change()),
                 shares,
                 shares * l.stock.price(),
                 shares * l.stock.change()), color=c)
+
+            total_equity += shares * l.stock.price()
+            daily_change += shares * l.stock.change()
 
             if not self.args.details:
                 continue
@@ -205,14 +213,20 @@ class STCommandPortfolio(STCommand):
                 change = l.stock.price() - l.acquire_price
                 change_pc = (change / l.acquire_price) * 100
 
-                self.println('  %s: %5d @ %7.02f  $%9.02f [%7.02f%%]' % (
+                self.println('  %s: %5d @ %7.02f  $%8.02f [%7.02f%%]' % (
                     l.date.strftime('%b %d, %Y'),
                     l.nr, l.acquire_price,
                     change, change_pc))
 
             self.println('')
 
-        self.println('** Runs: %d' % self.runs);
+        self.println('')
+        self.println('Portfolio Statistics:')
+        self.println('  Total equity: %10.2f' % total_equity)
+        self.println('  Total cash:   %10.2f' % self.portfolio.cash)
+        self.println('  Total value:  %10.2f' % (total_equity +
+                                                 self.portfolio.cash))
+        self.println('  Daily change: %10.2f' % daily_change)
 
         return STCommand.SUCCESS
 

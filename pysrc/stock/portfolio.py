@@ -84,10 +84,10 @@ class Portfolio(object):
                 c_colored = color_func('%7.2f' % (c * 100), 'green')
             elif c < 0:
                 arrow = color_func(u'\u25bc', 'red')
-                c_color = color_func('%7.2f' % (c * 100), 'red')
+                c_colored = color_func('%7.2f' % (c * 100), 'red')
             else:
                 arrow = ' '
-                c_color = '%7.2f' % (c * 100)
+                c_colored = '%7.2f' % (c * 100)
 
 
             change = self.asset_counts[asset] * pa

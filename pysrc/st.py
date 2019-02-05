@@ -126,7 +126,7 @@ class ST(object):
             color = curses.color_pair(0)
             if l.color == 'g':
                 color = curses.color_pair(1)
-            elif color == 'r':
+            elif l.color == 'r':
                 color = curses.color_pair(2)
 
             self.MAIN.addnstr(cur_y, 0, l.line.encode('utf-8'), x, color)
