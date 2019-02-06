@@ -2,7 +2,7 @@
 
 import sys
 
-from portfolio import *
+from stock.portfolio import Portfolio
 
 if len(sys.argv) < 2:
     print "Missing portfolio files!"
@@ -26,3 +26,6 @@ for i in range(1, len(sys.argv)):
     #                                         tr.quantity)
 
     print unicode(portfolio)
+
+    for s in portfolio.assets:
+        print(' %s' % portfolio.sum_stock(s))

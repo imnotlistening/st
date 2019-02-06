@@ -119,6 +119,9 @@ class Stock(Asset):
     def __repr__(self):
         return self.ticker
 
+    def __hash__(self):
+        return hash(self.ticker)
+
     def name(self):
         return self.get_data()['companyName']
 

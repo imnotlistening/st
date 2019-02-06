@@ -13,10 +13,11 @@ from stcommand import st_add_command
 from stcommand import st_add_alias
 
 from stock.portfolio import Portfolio
+from stock.lot       import LotAggregate
 
-
-portfolio_header = '%-15s %-5s %9s %10s | %-6s %11s %10s'
-portfolio_fields = '%-15s %-5s %9.2f %10s | %-6d %11.2f %10.2f'
+portfolio_header = '%-5s %9s %10s | %-6s %11s %11s %10s %10s'
+portfolio_lines  = '%-5s %9s %10s + %-6s %11s %11s %10s %10s'
+portfolio_fields = '%-5s %9.2f %10s | %-6d %11.2f %11.2f %10.2f %10.2f'
 
 # Let's us handle errors instead of argparse printing a useless help message
 # and killing our app.
@@ -149,62 +150,59 @@ class STCommandPortfolio(STCommand):
             self.portfolio.refresh()
         self.runs += 1
 
-        # Build a dictionary of the lots - map stock to list of relevant lots.
-        for l in lot_list:
-            if l.stock.symb() not in lot_dict:
-                lot_dict[l.stock.symb()] = list()
-            lot_dict[l.stock.symb()].append(l)
-
         # Now start printing stuff.
         self.println(portfolio_header % (
-            'Company Name',
             'Symb',
             'Price ($)',
             'Change',
             'Shares',
+            'Cost Basis',
             'Value',
+            'Change',
             'Gain'))
 
-        self.println(portfolio_header % (
-            '------------',
+        self.println(portfolio_lines % (
             '----',
             '---------',
             '------',
             '------',
+            '---------',
             '-----',
-            '----'))
+            '------',
+            '----'    ))
 
         total_equity    = 0.0
         total_cash      = 0.0
         portfolio_value = 0.0
         daily_change    = 0.0
 
-        for symb in sorted(lot_dict.keys()):
-            shares = 0
-            for l in lot_dict[symb]:
-                shares += l.nr
+        for s in sorted(self.portfolio.assets):
 
-            l = lot_dict[symb][0] # Access to a lot for general info.
+            la = self.portfolio.sum_stock(s)
+
             c = None
             direction = ''
-            if l.stock.change() > 0:
+            if s.change() > 0:
                 direction = u'\u25b2'
                 c = STLine.GREEN
-            elif l.stock.change() < 0:
+            elif s.change() < 0:
                 direction = u'\u25bc'
                 c = STLine.RED
 
-            self.println(portfolio_fields % (
-                l.stock.name()[0:14],
-                l.stock.symb(),
-                l.stock.price(),
-                '%-1s %6.02f' % (direction, l.stock.change()),
-                shares,
-                shares * l.stock.price(),
-                shares * l.stock.change()), color=c)
+            self.println(
+                portfolio_fields % (
+                    s.symb(),
+                    s.price(),
+                    '%-1s %6.02f' % (direction, s.change()),
+                    la.shares,
+                    la.cb,
+                    la.shares * s.price(),
+                    la.change,
+                    la.gain),
+                color=c)
 
-            total_equity += shares * l.stock.price()
-            daily_change += shares * l.stock.change()
+            total_equity += la.shares * s.price()
+            daily_change += la.shares * s.change()
 
             if not self.args.details:
                 continue

@@ -11,6 +11,7 @@ import curses
 
 from stock     import Stock
 from lot       import Lot
+from lot       import LotAggregate
 
 def no_color(s, color):
     return s
@@ -43,6 +44,7 @@ class Portfolio(object):
         self.lots         = list()
         self.assets       = None     # Will be a list of stocks.
         self.asset_counts = dict()
+        self.asset_lots   = dict()
         self.cash         = 0.0
 
         f = open(file_path)
@@ -50,7 +52,22 @@ class Portfolio(object):
         for line in f:
             self.parse_line(line)
 
-        self.accumulate_assets()
+        self.__compute_details()
+        self.assets = self.asset_lots.keys()
+
+    def __compute_details(self):
+        """
+        Compute an asset map: that is a map of assets to list of Lots.
+        Also compute how many of each stock we have.
+        """
+
+        for l in self.lots:
+            if l.stock not in self.asset_lots:
+                self.asset_lots[l.stock] = list()
+                self.asset_counts[l.stock] = 0
+
+            self.asset_lots[l.stock].append(l)
+            self.asset_counts[l.stock] += l.nr
 
     def __to_string(self, color_func=no_color):
         """
@@ -74,10 +91,9 @@ class Portfolio(object):
         total = 0
         total_change = 0
 
-        for stock in sorted(self.assets):
-            p, c, o, _ = stock.get_price()
-            pa, _ = stock.get_change()
-            asset = stock.ticker
+        for s in sorted(self.assets):
+            p, c, o, _ = s.get_price()
+            pa, _ = s.get_change()
 
             if c > 0:
                 arrow = color_func(u'\u25b2', 'green')
@@ -90,16 +106,15 @@ class Portfolio(object):
                 c_colored = '%7.2f' % (c * 100)
 
 
-            change = self.asset_counts[asset] * pa
+            change = self.asset_counts[s] * pa
 
-            up += fmt % (asset,
-                         p,
+            up += fmt % (s, p,
                          arrow, c_colored,
-                         self.asset_counts[asset],
-                         self.asset_counts[asset] * p,
+                         self.asset_counts[s],
+                         self.asset_counts[s] * p,
                          change)
 
-            total += self.asset_counts[asset] * p
+            total += self.asset_counts[s] * p
             total_change += change
 
         # Totals
@@ -130,26 +145,6 @@ class Portfolio(object):
         for s in self.assets:
             s.refresh()
 
-    def accumulate_assets(self):
-        """
-        Run through the lots and count up how much of each stock we actually
-        have. Store this in the dict assets.
-        """
-
-        self.asset_counts = dict()
-
-        for l in self.lots:
-            if l.stock.ticker not in self.asset_counts.keys():
-                self.asset_counts[l.stock.ticker] = 0
-
-            self.asset_counts[l.stock.ticker] += l.nr
-
-        # Only bother doing this once.
-        if not self.assets:
-            self.assets = list()
-            for a in self.asset_counts.keys():
-                self.assets.append(Stock(a))
-
     def cost_basis(self):
         """
         Accumulate the cost basis for this portfolio. This uses a numerically
@@ -162,6 +157,38 @@ class Portfolio(object):
             cb += l.cost_basis()
 
         return cb
+
+    def sum_stock(self, stock):
+        """
+        Sum up all lots that match the passed stock. Returns a big tuple of:
+
+          (Shares, CostBasis, Price,
+           Change, ChangePercent,
+           Gain, GainPercent)
+        """
+
+        la = LotAggregate(stock)
+
+        la.price = stock.price()
+
+        for l in self.asset_lots[stock]:
+            la.shares += l.nr
+            la.cb     += l.cost_basis()
+
+        ca, cp = stock.get_change()
+
+        la.gain     = (la.shares * stock.price()) - la.cb
+        la.change   = la.shares * ca
+        la.change_p = la.shares * cp
+
+        if la.cb > 0.0:
+            la.gain_p   = (la.gain / la.cb) * 100
+
+        return la
+
+    ##
+    ## Portfolio parsing stuff.
+    ##
 
     def parse_line(self, line):
         """

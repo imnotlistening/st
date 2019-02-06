@@ -3,7 +3,6 @@
 # that proper cost basis reporting can be done for a portfolio.
 #
 
-
 class Lot(object):
     """
     Each lot is defined by a stock and some number of those stocks. An acquire
@@ -57,7 +56,7 @@ class Lot(object):
         if refresh:
             self.stock.refresh()
 
-        price  = self.stock.price()
+        price = self.stock.price()
 
         return (price - self.acquire_price) * self.nr
 
@@ -67,3 +66,31 @@ class Lot(object):
 
         # Alphabetical sort.
         return self.stock < l.stock
+
+class LotAggregate(object):
+    """
+    Just holds aggregated lot data.
+    """
+
+    def __init__(self, stock,
+                 shares   = 0.0,
+                 cb       = 0.0,
+                 price    = 0.0,
+                 change   = 0.0,
+                 change_p = 0.0,
+                 gain     = 0.0,
+                 gain_p   = 0.0):
+
+        self.stock    = stock
+        self.shares   = shares
+        self.cb       = cb
+        self.price    = price
+        self.change   = change
+        self.change_p = change_p
+        self.gain     = gain
+        self.gain_p   = gain_p
+
+    def __repr__(self):
+        return ('%s: %4d CB=%10.2f pr=%7.2f ch=%6.2f cp=%6.2f ga=%8.2f gp=%6.2f' %
+                (self.stock, self.shares, self.cb, self.price,
+                 self.change, self.change_p, self.gain, self.gain_p))
